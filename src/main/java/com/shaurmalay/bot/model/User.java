@@ -14,13 +14,12 @@ import java.util.List;
  * @Date 24.10.2023
  */
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "chat_id"))
 @Data
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
     @Column(name = "chat_id")
+    @Unique
     private Long chatId;
     private String firstName;
     private String lastName;

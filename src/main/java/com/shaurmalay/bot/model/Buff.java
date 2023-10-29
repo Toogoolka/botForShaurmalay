@@ -10,7 +10,7 @@ import lombok.Data;
  * @Date 24.10.2023
  */
 @Entity
-@Table(name = "ingridients")
+@Table(name = "ingredients")
 @Data
 public class Buff {
     @Id
@@ -18,8 +18,6 @@ public class Buff {
     private Long id;
     private String name;
     private int price;
-    private String callbackData;
-
     @Override
     public String toString() {
         return name;

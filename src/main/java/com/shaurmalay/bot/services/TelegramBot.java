@@ -6,7 +6,6 @@ import com.shaurmalay.bot.dao.impl.GoodDaoImpl;
 import com.shaurmalay.bot.model.Buff;
 import com.shaurmalay.bot.model.Cart;
 import com.shaurmalay.bot.model.Good;
-import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,9 +14,6 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.*;
@@ -34,18 +30,20 @@ public class TelegramBot extends TelegramLongPollingBot {
     private GoodDaoImpl goodDaoImpl;
     private BuffDao buffDao;
     private Cart cart;
+    private Handlers handlers;
     List<Good> order = new ArrayList<>();
     List<Buff> addToOrder = new ArrayList<>();
 
 
 
     @Autowired
-    public TelegramBot(BotConfig botConfig, UserService userService, GoodDaoImpl goodDaoImpl, BuffDao buffDao, Cart cart) {
+    public TelegramBot(BotConfig botConfig, UserService userService, GoodDaoImpl goodDaoImpl, BuffDao buffDao, Cart cart, Handlers handlers) {
         this.botConfig = botConfig;
         this.userService = userService;
         this.goodDaoImpl = goodDaoImpl;
         this.buffDao = buffDao;
         this.cart = cart;
+        this.handlers = handlers;
     }
 
     public TelegramBot(DefaultBotOptions options) {
@@ -73,14 +71,9 @@ public class TelegramBot extends TelegramLongPollingBot {
 
             switch (messageText) {
                 case "/start":
-                    String text = EmojiParser.parseToUnicode(":rocket:" + update.getMessage().getChat().getFirstName() +
-                            " Стартанул бота!");
                     userService.registerUser(update.getMessage());
                     executeMessage(CommandsBot.startCommandReceived(chatId, update.getMessage().getChat().getFirstName()));
 
-                    break;
-                case "/menu":
-                    executeMessage(CommandsBot.menuCommandRecieved(chatId, goodList));
                     break;
                 case "/unsubscribe":
                     userService.deleteUser(chatId);
@@ -95,52 +88,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
             }
         } else if (update.hasCallbackQuery()) {
-            SendMessage message = new SendMessage();
-            EditMessageText editMessageText = new EditMessageText();
-            InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-
-            int messageId = update.getCallbackQuery().getMessage().getMessageId();
-            long chatId = update.getCallbackQuery().getMessage().getChatId();
-            String callBackData = update.getCallbackQuery().getData();
-            for (int i = 0; i < goodList.size(); i++) {
-                if (callBackData.equals(goodList.get(i).getCallbackData())) {
-                    Good good = goodList.get(i);
-                    order.add(good);
-                    cart.setGoods(order);
-                    cart.incrementCounter();
-                    editMessageText.setText("В корзине: " + cart.calculateSum() + "р.");
-                    editMessageText.setChatId(String.valueOf(chatId));
-                    editMessageText.setMessageId(messageId);
-//                    editMessageText.setReplyMarkup(CommandsBot.getBuffMarkup(buffList, 3));
-                    List<List<InlineKeyboardButton>> rows = CommandsBot.getBuffsRowsMarkup(buffList,3);
-                    InlineKeyboardButton cartBtn = new InlineKeyboardButton();
-                    cartBtn.setText(EmojiParser.parseToUnicode(":shopping_cart: Коризна"));
-                    cartBtn.setCallbackData("CART");
-                    rows.add(Collections.singletonList(cartBtn));
-                    keyboardMarkup.setKeyboard(rows);
-                    editMessageText.setReplyMarkup(keyboardMarkup);
-                }
-            }
-            executeEditMessage(editMessageText);
-        } else if (update.hasCallbackQuery()) {
-            EditMessageText editMessageText = new EditMessageText();
-            int messageId = update.getCallbackQuery().getMessage().getMessageId();
-            long chatId = update.getCallbackQuery().getMessage().getChatId();
-            String callBackData = update.getCallbackQuery().getData();
-            for (int i = 0; i < goodList.size(); i++) {
-                if (callBackData.equals(buffList.get(i).getCallbackData())) {
-                    Buff buff = buffList.get(i);
-                    order.get(order.size() -1).getBuffList().add(buff);
-                    cart.setGoods(order);
-                    cart.incrementCounter();
-                    editMessageText.setText("В корзине: " + cart.calculateSum() + "р.");
-                    editMessageText.setChatId(String.valueOf(chatId));
-                    editMessageText.setMessageId(messageId);
-//
-                    editMessageText.setReplyMarkup(CommandsBot.getBuffMarkup(buffList, 3));
-                }
-            }
-            executeEditMessage(editMessageText);
+            executeMessage(handlers.handleCallback(update));
         }
     }
 

@@ -3,10 +3,7 @@ package com.shaurmalay.bot.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import javax.annotation.Nullable;
-import java.sql.Timestamp;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
 
 /**
  * @author Vladislav Tugulev
@@ -23,9 +20,9 @@ public class Order {
     private String addres;
     private String positions;
     private int orderSum;
-    private Timestamp orderedAt;
+    private LocalDateTime orderedAt;
     @ManyToOne
-    @JoinColumn(name = "customerId", referencedColumnName = "id")
+    @JoinColumn(name = "customerId", referencedColumnName = "chat_id")
     private User customer;
 
 }

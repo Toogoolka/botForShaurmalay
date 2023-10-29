@@ -26,5 +26,4 @@ public class Good {
     @JoinColumn(name = "typeId", referencedColumnName = "id")
     private GoodTypes type;
     private String emoji;
-    private String callbackData;
 }

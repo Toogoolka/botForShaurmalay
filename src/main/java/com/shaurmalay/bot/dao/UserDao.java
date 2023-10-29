@@ -1,5 +1,6 @@
 package com.shaurmalay.bot.dao;
 
+
 import com.shaurmalay.bot.model.User;
 import org.springframework.data.repository.CrudRepository;
 
