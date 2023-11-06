@@ -8,4 +8,5 @@ import org.springframework.data.repository.CrudRepository;
  * @Date 24.10.2023
  */
 public interface BuffDao extends CrudRepository<Buff, Long> {
+    Buff getBuffByCallback(String callback);
 }

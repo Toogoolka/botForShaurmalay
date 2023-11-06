@@ -1,5 +1,6 @@
 package com.shaurmalay.bot.model;
 
+import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
@@ -12,12 +13,18 @@ import java.util.List;
  * @Date 25.10.2023
  */
 @Data
-@Component
+@Entity
+@Table(name = "cart")
 public class Cart {
-    private List<Good> goods = new ArrayList<>();
-    private int sum = 0;
-    private int counterPositions = 0;
-
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column
+    private int sum;
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Good> goods;
+    @Column(name = "user_id")
+    private Long userId;
     public void addToCart(Good good) {
         goods.add(good);
     }
@@ -37,7 +44,5 @@ public class Cart {
     public void deleteFromCart(Good good) {
         goods.remove(good);
     }
-    public void incrementCounter() {
-        counterPositions++;
-    }
+
 }

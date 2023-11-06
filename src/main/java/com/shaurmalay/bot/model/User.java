@@ -8,6 +8,7 @@ import org.checkerframework.common.aliasing.qual.Unique;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Vladislav Tugulev
@@ -32,4 +33,18 @@ public class User {
     @OneToMany(mappedBy = "customer")
     private List<Order> orderList;
     private Timestamp registeredAt;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "cart_id", referencedColumnName = "id")
+    private Cart cart;
+    @Override
+    public String toString() {
+        return "User{" +
+                "chatId=" + chatId +
+                ", userName='" + userName + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", registeredAt=" + registeredAt +
+                ", statuses=" + statuses.stream().map(StatusUser::getId).collect(Collectors.toList()) +
+                '}';
+    }
 }

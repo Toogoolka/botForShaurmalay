@@ -18,6 +18,10 @@ public class Buff {
     private Long id;
     private String name;
     private int price;
+    private String callback;
+    @ManyToOne
+    @JoinColumn(name = "good_id")
+    private Good good;
     @Override
     public String toString() {
         return name;
