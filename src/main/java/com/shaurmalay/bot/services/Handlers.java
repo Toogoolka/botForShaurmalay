@@ -21,7 +21,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -111,7 +110,7 @@ public class Handlers {
         return editMessageText;
     }
 
-    public EditMessageText shaurmaMenuCallbackHandler(Update update) {
+    public EditMessageText drinksMenuCallbackHandler(Update update) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         EditMessageText editMessageText = new EditMessageText();
         editMessageText.enableHtml(true);
@@ -121,14 +120,10 @@ public class Handlers {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
         editMessageText.setMessageId(messageId);
         editMessageText.setChatId(String.valueOf(chatId));
+        keyboardMarkup.setKeyboard(Markups.getDrinksMurkup(drinks, 3));
+        editMessageText.setText(EmojiParser.parseToUnicode(":droplet: <b>Сушнячок:</b>"));
+        editMessageText.setReplyMarkup(keyboardMarkup);
 
-
-        //TODO Для чего это???
-        if (CallbackForMsg.DRINKS.name().equals(data)) {
-            keyboardMarkup.setKeyboard(Markups.getDrinksMurkup(drinks, 3));
-            editMessageText.setText(EmojiParser.parseToUnicode(":droplet: Сушнячок:"));
-            editMessageText.setReplyMarkup(keyboardMarkup);
-        }
         return editMessageText;
     }
 

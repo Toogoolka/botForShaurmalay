@@ -36,7 +36,7 @@ public class GoodInCartService {
     public String getGoodInCartTostring(Cart cart, Long goodInCartId) {
         StringBuilder sb = new StringBuilder();
         GoodInCart goodInCart = goodInCartDao.findById(goodInCartId).get();
-        sb.append(goodDao.getGoodByCallBack(goodInCart.getGoodCallbacck()));
+        sb.append(goodDao.getGoodByCallBack(goodInCart.getGoodCallbacck()) + " ");
         if (goodInCart.getBuffs() != null && !goodInCart.getBuffs().isEmpty()) {
             sb.append("(");
             sb.append(goodInCart.getBuffs().toString()

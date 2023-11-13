@@ -112,7 +112,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 executeEditMessage(handlers.shaurmaMenuCallbackHandler(update, goodList));
                 return;
             } else if (update.getCallbackQuery().getData().equals(CallbackForMsg.DRINKS.name())) {
-                executeEditMessage(handlers.shaurmaMenuCallbackHandler(update));
+                executeEditMessage(handlers.drinksMenuCallbackHandler(update));
                 return;
             } else if (update.getCallbackQuery().getData().equals(CallbackForMsg.MAIN_PAGE.name())) {
                 executeEditMessage(handlers.mainPageCallbackHandler(update));

@@ -1,20 +1,12 @@
 package com.shaurmalay.bot.services.markups_and_buttons;
 
-import com.shaurmalay.bot.model.Buff;
+
 import com.shaurmalay.bot.model.callbacks.CallbackForMsg;
-import com.shaurmalay.bot.model.Cart;
 import com.vdurmont.emoji.EmojiParser;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.util.ArrayList;
-import java.util.List;
 
-/**
- * @author Vladislav Tugulev
- * @Date 27.10.2023
- */
 @Slf4j
 public class Buttons {
 
@@ -71,7 +63,7 @@ public class Buttons {
     }
     public static InlineKeyboardButton getConfirmBuffBtn() {
         InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(EmojiParser.parseToUnicode(":white_check_mark: Подтвердить"));
+        button.setText(EmojiParser.parseToUnicode(":white_check_mark: Шаурма готова"));
         button.setCallbackData(CallbackForMsg.ADD_TO_CART.name());
         return button;
     }
