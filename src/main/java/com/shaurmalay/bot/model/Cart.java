@@ -2,16 +2,9 @@ package com.shaurmalay.bot.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-
-
-/**
- * @author Vladislav Tugulev
- * @Date 25.10.2023
- */
 @Data
 @Entity
 @Table(name = "cart")
@@ -25,9 +18,8 @@ public class Cart {
     private List<Good> goods;
     @Column(name = "user_id")
     private Long userId;
-    public void addToCart(Good good) {
-        goods.add(good);
-    }
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL)
+    private List<GoodInCart> goodIncarts;
 
     public int calculateSum() {
 
@@ -41,8 +33,13 @@ public class Cart {
                 .sum();
         return sum;
     }
-    public void deleteFromCart(Good good) {
-        goods.remove(good);
+    public void addGoodInCart(GoodInCart goodInCart) {
+        if(goodIncarts == null)
+            goodIncarts = new ArrayList<>();
+        goodIncarts.add(goodInCart);
+    }
+    public void deleteGoodInCart(GoodInCart goodInCart) {
+        goodIncarts.remove(goodInCart);
     }
 
 }

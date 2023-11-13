@@ -4,7 +4,7 @@ import com.shaurmalay.bot.model.Cart;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+
 
 /**
  * @author Vladislav Tugulev

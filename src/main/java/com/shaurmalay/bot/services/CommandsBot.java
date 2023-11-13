@@ -3,6 +3,7 @@ package com.shaurmalay.bot.services;
 import com.shaurmalay.bot.dao.GoodDao;
 import com.shaurmalay.bot.dao.impl.GoodDaoImpl;
 import com.shaurmalay.bot.services.markups_and_buttons.Buttons;
+import com.shaurmalay.bot.services.markups_and_buttons.Markups;
 import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,13 +35,15 @@ public class CommandsBot {
 
     public static SendMessage startCommandReceived(long chatId, String firstName) {
         SendMessage sendMessage = new SendMessage();
+        sendMessage.enableHtml(true);
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();;
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
         List<InlineKeyboardButton> buttons = new ArrayList<>();
-        String answer = EmojiParser.parseToUnicode("Сәлам, " + firstName + "!" + " :blush:");
+        String answer = EmojiParser.parseToUnicode("Сәлам, <b>" + firstName + "!</b>" + " :blush:");
         buttons.add(Buttons.getCreateOrderBtn());
         buttons.add(Buttons.getMyOrdersBtn());
         rowsInLine.add(buttons);
+        rowsInLine.add(Markups.getCartLine());
         keyboardMarkup.setKeyboard(rowsInLine);
         sendMessage.setReplyMarkup(keyboardMarkup);
         sendMessage.setChatId(String.valueOf(chatId));

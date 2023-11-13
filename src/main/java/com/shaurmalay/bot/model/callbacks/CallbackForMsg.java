@@ -10,10 +10,12 @@ public enum CallbackForMsg {
     DRINKS,
     STARTERS,
     ADD_BUFF,
-    DELETE_BUFF,
+    DELETE_BUFFS,
+    DELETE_LAST_BUFF,
     CART,
     ADD_TO_CART,
     DELETE_FROM_CART,
+    DELETE_ALL_FROM_CART,
     MAIN_PAGE,
     MY_ORDERS,
     CREATE_ORDER

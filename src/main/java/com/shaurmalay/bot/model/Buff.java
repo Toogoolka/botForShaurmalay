@@ -4,6 +4,8 @@ package com.shaurmalay.bot.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 
 /**
  * @author Vladislav Tugulev
@@ -26,4 +28,6 @@ public class Buff {
     public String toString() {
         return name;
     }
+    @ManyToMany(mappedBy = "buffs")
+    List<GoodInCart> goodIncarts;
 }

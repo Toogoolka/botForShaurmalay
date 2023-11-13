@@ -21,7 +21,7 @@ public class Good {
     private Long id;
     private String name;
     private int price;
-    @OneToMany(mappedBy = "good",fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "good")
     private List<Buff> buffList;
     @ManyToOne
     @JoinColumn(name = "typeId", referencedColumnName = "id")
@@ -35,7 +35,7 @@ public class Good {
     @Override
     public String toString() {
         String s = name;
-        if (buffList != null) {
+        if (buffList != null && !buffList.isEmpty()) {
             s = name + " (" +
                     buffList +
                     ")";

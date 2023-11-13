@@ -2,17 +2,15 @@ package com.shaurmalay.bot.services.markups_and_buttons;
 
 import com.shaurmalay.bot.model.Buff;
 import com.shaurmalay.bot.model.Good;
+import com.shaurmalay.bot.model.GoodInCart;
 import com.shaurmalay.bot.model.callbacks.CallbackForMsg;
 import com.vdurmont.emoji.EmojiParser;
+import org.glassfish.grizzly.streams.Stream;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author Vladislav Tugulev
- * @Date 29.10.2023
- */
 public class Markups {
     public static List<List<InlineKeyboardButton>> getShaurmaMarkup(List<Good> items, int countElementsOnRows) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -45,9 +43,11 @@ public class Markups {
             }
         }
         rows.add(getConfirmLine());
-        rows.add(getBackPageLine(CallbackForMsg.ADD_TO_CART, "Ничего не нужно"));
+        rows.add(getBackPageLine(CallbackForMsg.DELETE_BUFFS, "Ничего не нужно"));
         return rows;
     }
+
+
     public static List<List<InlineKeyboardButton>> getDrinksMurkup(List<Good> drinks, int countElementsOnRows) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> buttonsOnTheRow = new ArrayList<>();
@@ -56,6 +56,31 @@ public class Markups {
                     drinks.get(i).getCallBack().toUpperCase());
             buttonsOnTheRow.add(btn);
             if (buttonsOnTheRow.size() == countElementsOnRows || i == drinks.size() - 1) {
+                rows.add(buttonsOnTheRow);
+                buttonsOnTheRow = new ArrayList<>();
+            }
+        }
+        rows.add(getCartLine());
+        rows.add(getBackPageLine(CallbackForMsg.CREATE_ORDER,"Назад"));
+        return rows;
+    }
+    public static List<List<InlineKeyboardButton>> getStartersMurkup(List<Good> starters, int countElementsOnRows) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> buttonsOnTheRow = new ArrayList<>();
+        for (int i = 0; i < starters.size(); i++) {
+            if(starters.get(i).getCallBack().contains("S_ASHPOCHMAKI")) {
+                rows.add(buttonsOnTheRow);
+                buttonsOnTheRow = new ArrayList<>();
+                rows.add(getAnyLine(starters.get(i).getEmoji() + " " + starters.get(i).getName(),
+                        starters.get(i).getCallBack().toUpperCase()));
+                continue;
+            }
+            var btn = createButton(starters.get(i).getEmoji() + " " + starters.get(i).getName(),
+                    starters.get(i).getCallBack().toUpperCase());
+            buttonsOnTheRow.add(btn);
+
+            if (buttonsOnTheRow.size() == countElementsOnRows || i == starters.size() - 1 &&
+                    starters.get(i).getCallBack().contains("S_ASHPOCHMAKI")) {
                 rows.add(buttonsOnTheRow);
                 buttonsOnTheRow = new ArrayList<>();
             }
@@ -77,14 +102,20 @@ public class Markups {
         return cartLine;
     }
     public static List<InlineKeyboardButton> getConfirmLine() {
-        List<InlineKeyboardButton> cartLine = new ArrayList<>();
-        cartLine.add(Buttons.getConfirmBuffBtn());
-        return cartLine;
+        List<InlineKeyboardButton> line = new ArrayList<>();
+        line.add(Buttons.getConfirmBuffBtn());
+        line.add(Buttons.createBtn(":o:","Отменить добавку", CallbackForMsg.DELETE_LAST_BUFF));
+        return line;
     }
     public static List<InlineKeyboardButton> getMainPageLine() {
         List<InlineKeyboardButton> mainLine = new ArrayList<>();
         mainLine.add(Buttons.getMainPageBtn());
         return mainLine;
+    }
+    public static List<InlineKeyboardButton> getAnyLine(String textOnBtn, String callback) {
+        List<InlineKeyboardButton> cartLine = new ArrayList<>();
+        cartLine.add(createButton(textOnBtn,callback));
+        return cartLine;
     }
     public static List<InlineKeyboardButton> getBackPageLine(CallbackForMsg callback,String text) {
         List<InlineKeyboardButton> mainLine = new ArrayList<>();
@@ -97,7 +128,30 @@ public class Markups {
     public static List<List<InlineKeyboardButton>> getCartMarkup() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> buttonsOnTheRow = new ArrayList<>();
+        buttonsOnTheRow.add(createButton(":pencil: Убрать товар из корзины",
+                CallbackForMsg.DELETE_FROM_CART.name()));
+        buttonsOnTheRow.add(createButton(":wastebasket: Очистить корзину",
+                CallbackForMsg.DELETE_ALL_FROM_CART.name()));
+        rows.add(buttonsOnTheRow);
         rows.add(getBackPageLine(CallbackForMsg.CREATE_ORDER, "Назад"));
+        return rows;
+    }
+
+    public static List<List<InlineKeyboardButton>> getGoodsInCartMarkup(String goods, int countElementsOnRows, List<GoodInCart> goodInCarts) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> buttonsOnTheRow = new ArrayList<>();
+        String[] arrayGoods = goods.split("\n");
+        for (int i = 0; i < goodInCarts.size(); i++) {
+            var btn = createButton(arrayGoods[i],"DEL_GOOD_" + String.valueOf(goodInCarts.get(i).getId()));
+            buttonsOnTheRow.add(btn);
+            if (buttonsOnTheRow.size() == countElementsOnRows || i == goodInCarts.size() - 1) {
+                rows.add(buttonsOnTheRow);
+                buttonsOnTheRow = new ArrayList<>();
+            }
+        }
+        rows.add(getAnyLine(":wastebasket: Очистить корзину",
+                CallbackForMsg.DELETE_ALL_FROM_CART.name()));
+        rows.add(getBackPageLine(CallbackForMsg.CREATE_ORDER,"Назад"));
         return rows;
     }
 
