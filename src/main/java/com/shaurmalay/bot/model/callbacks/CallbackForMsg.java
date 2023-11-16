@@ -18,6 +18,8 @@ public enum CallbackForMsg {
     DELETE_ALL_FROM_CART,
     MAIN_PAGE,
     MY_ORDERS,
-    CREATE_ORDER
+    CREATE_ORDER,
+    ORDERING,
+    BACK_TO_OFFER
 
 }

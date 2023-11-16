@@ -20,4 +20,5 @@ public class StatusUser {
 
     @ManyToMany(mappedBy = "statuses")
     private List<User> users;
+
 }

@@ -2,13 +2,11 @@ package com.shaurmalay.bot.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Cascade;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * @author Vladislav Tugulev
- * @Date 24.10.2023
- */
 @Entity
 @Table(name = "orders")
 @Data
@@ -18,9 +16,13 @@ public class Order {
     private Long id;
     private int amountItems;
     private String addres;
+    private String phone;
     private String positions;
     private int orderSum;
     private LocalDateTime orderedAt;
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "statusId", referencedColumnName = "id")
+    private OrderStatus orderStatus;
     @ManyToOne
     @JoinColumn(name = "customerId", referencedColumnName = "chat_id")
     private User customer;
