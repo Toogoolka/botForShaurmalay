@@ -20,6 +20,8 @@ public enum CallbackForMsg {
     MY_ORDERS,
     CREATE_ORDER,
     ORDERING,
-    BACK_TO_OFFER
+    BACK_TO_OFFER,
+    CHECK_STATE_PAYMENT,
+    GET_TO_DEL
 
 }

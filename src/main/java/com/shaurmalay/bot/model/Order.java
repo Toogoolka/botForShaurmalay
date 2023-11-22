@@ -23,6 +23,8 @@ public class Order {
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "statusId", referencedColumnName = "id")
     private OrderStatus orderStatus;
+    private Long paymentId;
+    private String linkToPay;
     @ManyToOne
     @JoinColumn(name = "customerId", referencedColumnName = "chat_id")
     private User customer;

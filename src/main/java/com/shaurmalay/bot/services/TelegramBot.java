@@ -80,7 +80,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableHtml(true);
 
-
         final String DEFAULT_ANSWER = ":thinking: Простите, я вас не понял..";
         final String DEFAULT_CALLBACK_ANSWER = ":zzz: Простите, эта кнопка пока на ремонте";
 
@@ -92,10 +91,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             long chatId = update.getMessage().getChatId();
             deleteMessage.setMessageId(update.getMessage().getMessageId());
             deleteMessage.setChatId(String.valueOf(update.getMessage().getChatId()));
-            if (messageText.trim().toLowerCase().startsWith("/adres")) {
+            if (messageText.trim().toLowerCase().startsWith("адрес")) {
                 executeMessage(handlers.inputPhoneNumber(sendMessage, update));
                 return;
-            } else if (messageText.trim().toLowerCase().startsWith("/tel")) {
+            } else if (messageText.trim().toLowerCase().startsWith("тел")) {
                 executeMessage(handlers.sendToUserChat(sendMessage, update));
                 executeMessage(handlers.sendOfferToDelChat(sendMessage, update, botConfig.getDelChatId()));
                 return;
@@ -196,7 +195,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
                 return;
             } else if (data.equals("YES")) {
-                executeEditMessage(handlers.yesHandl(update, editMessageText, prices));
+                executeEditMessage(handlers.calculateDelPriceHandler(update, editMessageText, prices));
                 return;
             } else if (data.equals("NO")) {
                 executeEditMessage(handlers.canselByDeliveryMan(editMessageText, update));
@@ -222,6 +221,16 @@ public class TelegramBot extends TelegramLongPollingBot {
             } else if (data.startsWith("MY_PHONE_")) {
                 executeMessage(handlers.sendToUserChat(sendMessage, update));
                 executeMessage(handlers.sendOfferToDelChat(sendMessage, update, botConfig.getDelChatId()));
+                return;
+            } else if (data.equals("PAID")) {
+                executeEditMessage(handlers.checkPaidPaymentHandler(editMessageText, update));
+                return;
+            } else if (data.equals(CallbackForMsg.CHECK_STATE_PAYMENT.name())) {
+                executeEditMessage(handlers.checkStatePaymentForDel(editMessageText, update));
+                return;
+            } else if (data.equals(CallbackForMsg.GET_TO_DEL.name())) {
+                executeEditMessage(handlers.getToDelOrderHandler(editMessageText, update));
+                executeMessage(handlers.startDeliveringSendToUser(sendMessage, update));
                 return;
             }
             editMessageText.setText(EmojiParser.parseToUnicode(DEFAULT_CALLBACK_ANSWER));

@@ -1,17 +1,20 @@
 package com.shaurmalay.bot.services;
 
 
+import com.shaurmalay.bot.controllers.TransactionController;
 import com.shaurmalay.bot.dao.*;
 import com.shaurmalay.bot.dao.impl.DelPriceDao;
 import com.shaurmalay.bot.dao.impl.OrderDaoImpl;
 import com.shaurmalay.bot.exceptions.UserNotFoundException;
 import com.shaurmalay.bot.model.*;
 import com.shaurmalay.bot.model.callbacks.CallbackForMsg;
+import com.shaurmalay.bot.model.requests.ResponseCancelObj;
+import com.shaurmalay.bot.model.requests.ResponseGetStateObj;
+import com.shaurmalay.bot.model.requests.ResponseInitObj;
 import com.shaurmalay.bot.services.markups_and_buttons.Buttons;
 import com.shaurmalay.bot.services.markups_and_buttons.Markups;
 import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.Opt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,9 +31,8 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class Handlers {
-    private UserDao userDao;
     private OrderDao orderDao;
-    private OrderDaoImpl orderDaoImpl;
+    private OrderDaoImpl orderDaoimpl;
     private GoodDao goodDao;
     private BuffDao buffDao;
     private CartDao cartDao;
@@ -39,12 +41,14 @@ public class Handlers {
     private GoodInCartService goodInCartService;
     private DelPriceDao delPriceDao;
     private ReasonDao reasonDao;
-
+    private TransactionController controller;
+    private RequestObjBuildService requestObjBuildService;
     @Autowired
-    public Handlers(UserDao userDao, OrderDao orderDao, OrderDaoImpl orderDaoImpl, GoodDao goodDao, BuffDao buffDao, CartDao cartDao, OrderService orderService, GoodInCartDao goodInCartDao, GoodInCartService goodInCartService, DelPriceDao delPriceDao, ReasonDao reasonDao) {
-        this.userDao = userDao;
+    public Handlers(OrderDao orderDao, OrderDaoImpl orderDaoimpl, GoodDao goodDao, BuffDao buffDao, CartDao cartDao, OrderService orderService,
+                    GoodInCartDao goodInCartDao, GoodInCartService goodInCartService, DelPriceDao delPriceDao,
+                    ReasonDao reasonDao, TransactionController controller, RequestObjBuildService requestObjBuildService) {
         this.orderDao = orderDao;
-        this.orderDaoImpl = orderDaoImpl;
+        this.orderDaoimpl = orderDaoimpl;
         this.goodDao = goodDao;
         this.buffDao = buffDao;
         this.cartDao = cartDao;
@@ -53,6 +57,8 @@ public class Handlers {
         this.goodInCartService = goodInCartService;
         this.delPriceDao = delPriceDao;
         this.reasonDao = reasonDao;
+        this.controller = controller;
+        this.requestObjBuildService = requestObjBuildService;
     }
 
 
@@ -417,10 +423,10 @@ public class Handlers {
         sendMessage.setReplyMarkup(keyboardMarkup);
         sendMessage.setChatId(String.valueOf(delChatId));
         sendMessage.setText(EmojiParser.parseToUnicode(":scroll: <b>Заказ#" + last.getId() + ":</b>" +
-                "\n" + goods +
+                "\n" + last.getPositions() +
                 "\n:moneybag: Сумма заказа: <b>" + sum + "₽</b>" +
                 "\n:round_pushpin:" + last.getAddres() +
-                "\n:telephone_receiver:" + last.getPhone() + "\n\n\nChatId:_" + chatId));
+                "\n:telephone_receiver:" + last.getPhone() + "\n\n\nChatId:_" + chatId + "\nOrderId:#" + last.getId()));
         return sendMessage;
     }
 
@@ -428,19 +434,19 @@ public class Handlers {
     public EditMessageText backToOfferInDelChat(EditMessageText editMessageText, Update update, Long delChatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         String message = update.getCallbackQuery().getMessage().getText();
-        String chatId = message.substring(message.lastIndexOf("_") + 1);
+        String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
         Cart cart = cartDao.findByUserId(Long.parseLong(chatId));
         String goods = goodInCartService.getGoodsWithBuffsToString(cart);
         Integer sum = goodInCartService.calculateSumForGoodsByCart(cart);
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(Long.parseLong(chatId)).get();
-        Order last = orders.get(orders.size() - 1);
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
         keyboardMarkup.setKeyboard(Markups.getOfferMarkup());
         editMessageText.setReplyMarkup(keyboardMarkup);
         editMessageText.setChatId(String.valueOf(delChatId));
         editMessageText.setText(EmojiParser.parseToUnicode(":scroll: <b>Заказ#" + last.getId() + ":</b>\n" + goods +
                 "\n:moneybag: Сумма заказа: <b>" + sum + "₽</b>" +
                 "\n:round_pushpin:" + last.getAddres() +
-                "\n:telephone_receiver:" + last.getPhone() + "\n\n\nChatId:_" + chatId));
+                "\n:telephone_receiver:" + last.getPhone() + "\n\n\nChatId:_" + chatId + "\nOrderId:#" + orderId));
         return editMessageText;
     }
 
@@ -451,7 +457,7 @@ public class Handlers {
         Long chatId = 0L;
         if (update.hasMessage() && !update.hasCallbackQuery()) {
             message = update.getMessage().getText().trim();
-            phone = message.substring(message.lastIndexOf("/") + 4).trim();
+            phone = message.substring(message.lastIndexOf("тел") + 4).trim();
             chatId = update.getMessage().getChatId();
         } else {
             message = update.getCallbackQuery().getData();
@@ -464,7 +470,6 @@ public class Handlers {
         var orders = orderDao.findAllByCustomer_ChatId(chatId).get();
         var last = orders.get(orders.size() - 1);
         orderService.changeStatusOrder(2l, last);
-        last.setPositions(goodInCartService.getGoodsWithBuffsToString(cart));
         last.setOrderSum(goodInCartService.calculateSumForGoodsByCart(cart));
 
         last.setPhone(phone);
@@ -476,20 +481,20 @@ public class Handlers {
     }
 
     @Transactional
-    public EditMessageText yesHandl(Update update, EditMessageText editMessageText, List<DelPrice> prices) {
+    public EditMessageText calculateDelPriceHandler(Update update, EditMessageText editMessageText, List<DelPrice> prices) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         String message = update.getCallbackQuery().getMessage().getText();
         System.out.println(message);
-        String chatId = message.substring(message.lastIndexOf("_") + 1);
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(Long.parseLong(chatId)).get();
-        Order last = orders.get(orders.size() - 1);
+        String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
         inlineKeyboardMarkup.setKeyboard(Markups.getDelPriceMurkup(prices, 2));
         editMessageText.setReplyMarkup(inlineKeyboardMarkup);
         editMessageText.setChatId(String.valueOf(update.getCallbackQuery().getMessage().getChatId()));
         editMessageText.setText(EmojiParser.parseToUnicode("<b>Заказ#" + last.getId() + ":</b>" +
                 "\n:moneybag: Выберите стоимость доставки, согласно адресу предоставленного клиентом." +
                 "\n<b>Адрес: </b>" + last.getAddres() +
-                "\nChatId:_" + chatId));
+                "\nChatId:_" + chatId + "\nOrderId:#" + last.getId()));
         return editMessageText;
     }
 
@@ -497,21 +502,32 @@ public class Handlers {
     public EditMessageText otkazHandler(EditMessageText editMessageText, Update update) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(chatId).get();
+        String message = update.getCallbackQuery().getMessage().getText();
+        String orderId = message.substring(message.lastIndexOf("#") + 1);
         Cart cart = cartDao.findByUserId(chatId);
-        Order last = orders.get(orders.size() - 1);
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
         orderService.changeStatusOrder(7L, last);
         goodInCartService.deleteAllFromCart(cart);
-        orderDao.save(last);
-        keyboardMarkup.setKeyboard(Collections.singletonList(Markups.getMainPageLine()));
-        editMessageText.setReplyMarkup(keyboardMarkup);
-        editMessageText.setText(EmojiParser.parseToUnicode(":white_check_mark:<b> Заказ отменен</b>"));
+        ResponseCancelObj responseCancelObj = null;
+
+        try {
+            responseCancelObj = controller.getCancelPayment(requestObjBuildService.cancelOrGetStateObjBuilder(last));
+        } catch (Exception e) {
+            log.error("REST ERROR: " + e.getMessage());
+        }
+        if (responseCancelObj.isSuccess() && responseCancelObj.getStatus().equals("CANCELED")) {
+            orderDao.save(last);
+            keyboardMarkup.setKeyboard(Collections.singletonList(Markups.getMainPageLine()));
+            editMessageText.setReplyMarkup(keyboardMarkup);
+            editMessageText.setText(EmojiParser.parseToUnicode(":white_check_mark:<b> Заказ#"+ orderId +"</b> отменен"));
+        }
         return editMessageText;
     }
 
     public SendMessage sendCancelOrderToDelivery(SendMessage sendMessage, Update update, Long delChatId) {
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(update.getCallbackQuery().getMessage().getChatId()).get();
-        Order last = orders.get(orders.size() - 1);
+        String message = update.getCallbackQuery().getMessage().getText();
+        String orderId = message.substring(message.lastIndexOf("#") + 1);
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
         sendMessage.setChatId(String.valueOf(delChatId));
         sendMessage.setText(EmojiParser.parseToUnicode("<b>Заказ#" + last.getId() + "</b>" +
                 "\n:x: Клиент отказался от заказа"));
@@ -527,8 +543,8 @@ public class Handlers {
         keyboardMarkup.setKeyboard(Markups.getMyAddressMarkup(orders, 2));
         orderService.registerOrder(chatId);
         editMessageText.setText(EmojiParser.parseToUnicode("Отправьте ваш адрес мне в сообщение или выберите из существующих." +
-                "\n\nЧтобы я понял, что вы отправляете адрес, <b><u>ОБЯЗАТЕЛЬНО</u></b> начните ваше сообщение с /adres" +
-                "\n:bulb: <i><u>Например:</u> /adres ул.Пушкина, 45-3</i>"));
+                "\n\nЧтобы я понял, что вы отправляете адрес, <b><u>ОБЯЗАТЕЛЬНО</u></b> начните ваше сообщение с адрес" +
+                "\n:bulb: <i><u>Например:</u> адрес ул.Пушкина, 45-3</i>"));
         editMessageText.setReplyMarkup(keyboardMarkup);
         return editMessageText;
     }
@@ -541,7 +557,7 @@ public class Handlers {
         Long chatId = 0l;
         if (update.hasMessage() && !update.hasCallbackQuery()) {
             message = update.getMessage().getText().trim();
-            address = message.substring(message.lastIndexOf("/") + 6).trim();
+            address = message.substring(message.toLowerCase().lastIndexOf("адрес") + 6).trim();
             chatId = update.getMessage().getChatId();
         } else {
             chatId = update.getCallbackQuery().getMessage().getChatId();
@@ -550,13 +566,14 @@ public class Handlers {
             Order orderWithAddres = orderDao.findById(Long.parseLong(orderWithAddresId)).get();
             address = orderWithAddres.getAddres();
         }
-
+        Cart cart = cartDao.findByUserId(chatId);
 
         List<Order> ordersWithPhone = orderDao.findDistinctByCustomer_ChatIdAndOrderStatus_IdAndPhoneIsNotNull(chatId, 1L)
                 .get();
         var orders = orderDao.findAllByCustomer_ChatId(chatId).get();
         var last = orders.get(orders.size() - 1);
         last.setAddres(address);
+        last.setPositions(goodInCartService.getGoodsWithBuffsToString(cart));
         keyboardMarkup.setKeyboard(Markups.getMyPhonesMarkup(ordersWithPhone, 2));
         orderService.changeStatusOrder(4l, last);
         orderDao.save(last);
@@ -564,8 +581,8 @@ public class Handlers {
         sendMessage.setChatId(String.valueOf(chatId));
         sendMessage.setText(EmojiParser.parseToUnicode("<b>Отлично!</b> Оставьте номер телефона для связи, " +
                 "или выберите из существующих" +
-                "\n\nЧтобы я понял, что вы отправляете телефон, <b><u>ОБЯЗАТЕЛЬНО</u></b> начните ваше сообщение с /tel\n\n" +
-                ":bulb: <i><u>Например:</u> /tel 89172223333</i>"));
+                "\n\nЧтобы я понял, что вы отправляете телефон, <b><u>ОБЯЗАТЕЛЬНО</u></b> начните ваше сообщение с тел\n\n" +
+                ":bulb: <i><u>Например:</u> тел 89172223333</i>"));
         return sendMessage;
     }
 
@@ -573,37 +590,64 @@ public class Handlers {
     public SendMessage confirmationByUserHandler(SendMessage sendMessage, Update update) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        ResponseInitObj responseInitObj = null;
+
+
         String message = update.getCallbackQuery().getMessage().getText();
         String data = update.getCallbackQuery().getData();
-        String userChatId = message.substring(message.lastIndexOf("_") + 1);
+        String userChatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1);
         Cart cart = cartDao.findByUserId(Long.parseLong(userChatId));
         String goods = goodInCartService.getGoodsWithBuffsToString(cart);
-        var orders = orderDao.findAllByCustomer_ChatId(Long.parseLong(userChatId)).get();
-        var last = orders.get(orders.size() - 1);
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
         int goodsSum = last.getOrderSum();
         int deliveryPrice = delPriceDao.findByCallBack(data).get().getPrice();
         int total = goodsSum + deliveryPrice;
 
-        rows.add(Markups.getAnyLine("Оплатить заказ", "OPLATA"));
+        try {
+            responseInitObj = controller.getLinkFromBank(requestObjBuildService.initObjBuilder(userChatId,
+                    total*100, last));
+            last.setPaymentId(responseInitObj.getPaymentId());
+        } catch (Exception e) {
+            log.error("REST ERROR: " + e.getMessage());
+        }
+        String paymentUrl = responseInitObj.getPaymentURL();
+        last.setPaymentId(responseInitObj.getPaymentId());
+        last.setLinkToPay(paymentUrl);
+        last.setOrderSum(total);
+        orderDao.save(last);
+
+        rows.add(Markups.getPaymentLine("Оплатить заказ", paymentUrl));
         rows.add(Markups.getAnyLine("Отказаться от заказа", "OTKAZ"));
+        rows.add(Markups.getAnyLine(":white_check_mark: Оплатил заказ", "PAID"));
         keyboardMarkup.setKeyboard(rows);
         sendMessage.setReplyMarkup(keyboardMarkup);
         sendMessage.setChatId(userChatId);
-        sendMessage.setText(EmojiParser.parseToUnicode(":receipt:<b>Ваш заказ:</b>\n\n" + goods +
+        sendMessage.setText(EmojiParser.parseToUnicode(":receipt:<b>Заказ#"+ last.getId() + ":</b>\n\n" + goods +
                 "\n:shopping_cart: <b>Товаров на сумму: </b>" + goodsSum + "₽\n" +
                 ":motor_scooter: <b>Стоимость доставки: </b>" + deliveryPrice + "₽" +
-                "\n\n:moneybag: <b>Итоговая сумма</b>: " + total + "₽"));
+                "\n\n:moneybag: <b>Итоговая сумма</b>: " + total + "₽\n\n\nOrder#" + orderId));
         return sendMessage;
     }
 
     public EditMessageText awaitMoneyMsqToDeliveryHandler(EditMessageText editMessageText, Update update) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         String message = update.getCallbackQuery().getMessage().getText();
         Long deliveryChatId = update.getCallbackQuery().getMessage().getChatId();
-        String userChatId = message.substring(message.lastIndexOf("_") + 1);
+        String userChatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
+        System.out.println(userChatId + "\n" + orderId);
 
+        rows.add(Markups.getAnyLine(":eyes: Проверить оплату", CallbackForMsg.CHECK_STATE_PAYMENT.name()));
+        keyboardMarkup.setKeyboard(rows);
+        editMessageText.setReplyMarkup(keyboardMarkup);
         editMessageText.setChatId(String.valueOf(deliveryChatId));
         editMessageText.setText(EmojiParser.parseToUnicode(":hourglass_flowing_sand: Клиенту отправлена конечная " +
-                "стоимость, после оплаты заказа, вы сможете взять в доставку этот заказ\n\n\nChatId:_" + userChatId));
+                "стоимость, после оплаты заказа, вы сможете взять в доставку этот заказ\n\n\nChatId:_" + userChatId +
+                "\nOrderId:#" + orderId));
+
         return editMessageText;
     }
 
@@ -611,22 +655,22 @@ public class Handlers {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         List<Reason> reasons = (List<Reason>) reasonDao.findAll();
         String message = update.getCallbackQuery().getMessage().getText();
-        String chatId = message.substring(message.lastIndexOf("_") + 1);
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(Long.parseLong(chatId)).get();
-        Order last = orders.get(orders.size() - 1);
+        String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
         keyboardMarkup.setKeyboard(Markups.getDelReasonMarkup(reasons, 2));
         editMessageText.setReplyMarkup(keyboardMarkup);
         editMessageText.setText(EmojiParser.parseToUnicode(":scroll: <b>Заказ#" + last.getId() + "</b>" +
                 "\nУкажите причину отказа" +
-                "\nChatId:_" + chatId));
+                "\nChatId:_" + chatId + "\nOrderId:#" + orderId));
         return editMessageText;
     }
 
     public EditMessageText orderCanceledToDelChat(EditMessageText editMessageText, Update update) {
         String message = update.getCallbackQuery().getMessage().getText();
-        String chatId = message.substring(message.lastIndexOf("_") + 1);
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(Long.parseLong(chatId)).get();
-        Order last = orders.get(orders.size() - 1);
+        String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1);
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
         editMessageText.setText(EmojiParser.parseToUnicode(":white_check_mark: <b>Заказ#" + last.getId() +
                 "</b> был отменен курьером"));
         return editMessageText;
@@ -634,42 +678,144 @@ public class Handlers {
 
     public SendMessage orderCanceledToUserChat(SendMessage sendMessage, Update update) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+
         keyboardMarkup.setKeyboard(Collections.singletonList(Markups
                 .getBackPageLine(CallbackForMsg.CART, "Назад к оформлению")));
         String message = update.getCallbackQuery().getMessage().getText();
         String data = update.getCallbackQuery().getData();
         Reason reason = reasonDao.findByCallback(data).orElse(new Reason("неизвестно"));
-        String chatId = message.substring(message.lastIndexOf("_") + 1);
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(Long.parseLong(chatId)).get();
-        Order last = orders.get(orders.size() - 1);
+        String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
         orderService.changeStatusOrder(7L, last);
         sendMessage.setChatId(chatId);
         sendMessage.setReplyMarkup(keyboardMarkup);
-        sendMessage.setText(EmojiParser.parseToUnicode(":o: Ваш заказ был <b>отменен</b>." +
+        sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#"+ orderId + "был <b>отменен</b>." +
                 "\nПричина: <b>" + reason.getName() + "</b>"));
         return sendMessage;
     }
 
+//    @Transactional
+//    public void settingAddresFromData(Update update) {
+//        String callback = update.getCallbackQuery().getData();
+//        Long orderId = Long.parseLong(callback.substring(callback.lastIndexOf("_") + 1));
+//        Order orderRef = orderDao.findById(orderId).get();
+//        List<Order> orders = orderDao.findAllByCustomer_ChatId(update.getCallbackQuery().getMessage().getChatId()).get();
+//        Order last = orders.get(orders.size() - 1);
+//        last.setAddres(orderRef.getAddres());
+//        orderDao.save(last);
+//    }
+//
+//    @Transactional
+//    public void settingPhoneFromData(Update update) {
+//        String callback = update.getCallbackQuery().getData();
+//        Long orderId = Long.parseLong(callback.substring(callback.lastIndexOf("_") + 1));
+//        Order orderRef = orderDao.findById(orderId).get();
+//        List<Order> orders = orderDao.findAllByCustomer_ChatId(update.getCallbackQuery().getMessage().getChatId()).get();
+//        Order last = orders.get(orders.size() - 1);
+//        last.setAddres(orderRef.getAddres());
+//        orderDao.save(last);
+//    }
+
     @Transactional
-    public void settingAddresFromData(Update update) {
-        String callback = update.getCallbackQuery().getData();
-        Long orderId = Long.parseLong(callback.substring(callback.lastIndexOf("_") + 1));
-        Order orderRef = orderDao.findById(orderId).get();
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(update.getCallbackQuery().getMessage().getChatId()).get();
-        Order last = orders.get(orders.size() - 1);
-        last.setAddres(orderRef.getAddres());
-        orderDao.save(last);
+    public EditMessageText checkPaidPaymentHandler(EditMessageText editMessageText, Update update) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        ResponseGetStateObj getStateObj = null;
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        String message = update.getCallbackQuery().getMessage().getText();
+        String orderId = message.substring(message.lastIndexOf("#") + 1);
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
+        try {
+            getStateObj = controller.getStatePayment(requestObjBuildService.cancelOrGetStateObjBuilder(last));
+        } catch (Exception e) {
+            log.error("REST ERROR: " + e.getMessage());
+        }
+
+        if (getStateObj.getStatus().equals("CONFIRMED")) {
+            Cart cart = cartDao.findByUserId(update.getCallbackQuery().getMessage().getChatId());
+            goodInCartService.deleteAllFromCart(cart);
+            orderService.changeStatusOrder(1L, last);
+            editMessageText.setText(EmojiParser.parseToUnicode(":white_check_mark: Отлично! " +
+                    "Мы уже начали выполнять ваш заказ.\n\n<b>Приятного аппетита!</b>"));
+            rows.add(Markups.getMainPageLine());
+        } else {
+            editMessageText.setText(EmojiParser.parseToUnicode(":x: Ваш платёж <b>не подтверждён</b>." +
+                    "\nЕсли вы ещё <b><u>не оплачивали</u></b> ваш заказ, воспользуйтесь кнопкой оплатить заказ ниже." +
+                    "\n\n<b>Заказ#" + last.getId() + ":</b> Итого к оплате: " + last.getOrderSum() +
+                    "\nЕсли <b>заказ оплачен</b>, ожидайте подтверждения\n\n\nOrder#" + orderId));
+            rows.add(Markups.getPaymentLine("Оплатить заказ", last.getLinkToPay()));
+            rows.add(Markups.getAnyLine("Отказаться от заказа", "OTKAZ"));
+        }
+        keyboardMarkup.setKeyboard(rows);
+        editMessageText.setReplyMarkup(keyboardMarkup);
+        return editMessageText;
     }
 
     @Transactional
-    public void settingPhoneFromData(Update update) {
-        String callback = update.getCallbackQuery().getData();
-        Long orderId = Long.parseLong(callback.substring(callback.lastIndexOf("_") + 1));
-        Order orderRef = orderDao.findById(orderId).get();
-        List<Order> orders = orderDao.findAllByCustomer_ChatId(update.getCallbackQuery().getMessage().getChatId()).get();
-        Order last = orders.get(orders.size() - 1);
-        last.setAddres(orderRef.getAddres());
-        orderDao.save(last);
+    public EditMessageText checkStatePaymentForDel(EditMessageText editMessageText, Update update) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        ResponseGetStateObj getStateObj = null;
+        String message = update.getCallbackQuery().getMessage().getText();
+        Long chatId = Long.parseLong(message.substring(message.lastIndexOf("_") + 1,
+                message.lastIndexOf("\n")).trim());
+        String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
+
+        try {
+            getStateObj = controller.getStatePayment(requestObjBuildService.cancelOrGetStateObjBuilder(last));
+        } catch (Exception e) {
+            log.error("REST ERROR: " + e.getMessage());
+        }
+        if (getStateObj.getStatus().equals("CONFIRMED")) {
+            editMessageText.setText(EmojiParser.parseToUnicode("<b>Заказ#"+ last.getId() +":</b>" +
+                    "\n\nСтатус: :white_check_mark: <b>Оплачен</b>" +
+                    "\n\n\nChatId:_" + chatId + "\nOrderId:#" + last.getId()));
+            rows.add(Markups.getAnyLine("Взять в работу", CallbackForMsg.GET_TO_DEL.name()));
+        } else {
+            editMessageText.setText(EmojiParser.parseToUnicode("<b>Заказ#"+ last.getId() +":</b>" +
+                    "\n\nСтатус: :red_circle: <b>Не оплачен</b>" +
+                    "\n\n\nChatId:_" + chatId + "\nOrderId:#" + last.getId()));
+            rows.add(Markups.getAnyLine(":eyes: Проверить ещё раз", CallbackForMsg.CHECK_STATE_PAYMENT.name()));
+        }
+        keyboardMarkup.setKeyboard(rows);
+        editMessageText.setReplyMarkup(keyboardMarkup);
+        return editMessageText;
+    }
+
+    @Transactional
+    public EditMessageText getToDelOrderHandler(EditMessageText editMessageText, Update update) {
+        String message = update.getCallbackQuery().getMessage().getText();
+        String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
+        Cart cart = cartDao.findByUserId(Long.parseLong(chatId));
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
+        editMessageText.setText(EmojiParser.parseToUnicode(":scroll: <b>Заказ#" + last.getId() + ":</b>\n" +
+                last.getPositions() +
+                "\n:moneybag: Сумма заказа: <b>" + last.getOrderSum() + "₽</b>" +
+                "\n:round_pushpin:" + last.getAddres() +
+                "\n:telephone_receiver:" + last.getPhone() + "\n\n\nChatId:_" + chatId+ "\nOrderId:#" + last.getId()));
+        return editMessageText;
+    }
+    @Transactional
+    public SendMessage startDeliveringSendToUser(SendMessage sendMessage, Update update) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        String message = update.getCallbackQuery().getMessage().getText();
+        Long chatId = Long.parseLong(message.substring(message.lastIndexOf("_") + 1,
+                message.lastIndexOf("\n")).trim());
+        Long orderId = Long.parseLong(message.substring(message.lastIndexOf("#") + 1));
+        Order order = orderDao.findById(orderId).get();
+        orderService.changeStatusOrder(1L, order);
+        Cart cart = cartDao.findByUserId(chatId);
+        goodInCartService.deleteAllFromCart(cart);
+        rows.add(Markups.getMainPageLine());
+        keyboardMarkup.setKeyboard(rows);
+        sendMessage.setText(EmojiParser.parseToUnicode(":rocket: Курьер взял в работу ваш Заказ#" + orderId +
+                "\nДоставим в течение часа"));
+        sendMessage.setReplyMarkup(keyboardMarkup);
+        sendMessage.setChatId(String.valueOf(chatId));
+        return sendMessage;
     }
 
 

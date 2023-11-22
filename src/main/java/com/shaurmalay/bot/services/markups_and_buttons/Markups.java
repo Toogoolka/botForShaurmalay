@@ -6,7 +6,9 @@ import com.vdurmont.emoji.EmojiParser;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.util.ArrayList;
+
 import java.util.List;
+
 
 
 /*
@@ -129,7 +131,11 @@ public class Markups {
     public static List<List<InlineKeyboardButton>> getMyAddressMarkup(List<Order> orders, int countElementsOnRows) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> buttonsOnTheRow = new ArrayList<>();
+
         for (int i = 0; i < orders.size(); i++) {
+            if (i < orders.size() - 1 && orders.get(i).getAddres().equals(orders.get(i + 1).getAddres())) {
+                continue;
+            }
             var btn = createButton(orders.get(i).getAddres(),
                     "MY_ADDRESS_" + orders.get(i).getId());
             buttonsOnTheRow.add(btn);
@@ -145,6 +151,9 @@ public class Markups {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> buttonsOnTheRow = new ArrayList<>();
         for (int i = 0; i < orders.size(); i++) {
+            if (i < orders.size() - 1 && orders.get(i).getPhone().equals(orders.get(i + 1).getPhone())) {
+                continue;
+            }
             var btn = createButton(orders.get(i).getPhone(),
                     "MY_PHONE_" + orders.get(i).getId());
             buttonsOnTheRow.add(btn);
@@ -185,6 +194,14 @@ public class Markups {
     public static List<InlineKeyboardButton> getAnyLine(String textOnBtn, String callback) {
         List<InlineKeyboardButton> cartLine = new ArrayList<>();
         cartLine.add(createButton(textOnBtn, callback));
+        return cartLine;
+    }
+    public static List<InlineKeyboardButton> getPaymentLine(String textOnBtn, String url) {
+        List<InlineKeyboardButton> cartLine = new ArrayList<>();
+        InlineKeyboardButton btn = new InlineKeyboardButton();
+        btn.setText(textOnBtn);
+        btn.setUrl(url);
+        cartLine.add(btn);
         return cartLine;
     }
 

@@ -20,4 +20,16 @@ public class BotConfig {
     private String botName;
     @Value("${deliveryChatId}")
     private Long delChatId;
+    @Value("${TERMINAL_ID}")
+    private Long terminalId;
+
+    @Value("${TERMINAL_PASSWORD}")
+    private String terminalPass;
+
+    @Value("${URL_INIT}")
+    private String urlInit;
+    @Value("${URL_GETSTATE}")
+    private String urlGetState;
+    @Value("${URL_CANCEL}")
+    private String urlCancel;
 }
