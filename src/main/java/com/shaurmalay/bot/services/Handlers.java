@@ -778,6 +778,7 @@ public class Handlers {
                     "\n\n\nChatId:_" + chatId + "\nOrderId:#" + last.getId()));
             rows.add(Markups.getAnyLine(":eyes: Проверить ещё раз", CallbackForMsg.CHECK_STATE_PAYMENT.name()));
         }
+        rows.add(Markups.getAnyLine("Отменить заказ", CallbackForMsg.CANCEL_ORDER_AFTER_PAYMENT.name()));
         keyboardMarkup.setKeyboard(rows);
         editMessageText.setReplyMarkup(keyboardMarkup);
         return editMessageText;
@@ -793,6 +794,7 @@ public class Handlers {
         Order last = orderDao.findById(Long.parseLong(orderId)).get();
         keyboardMarkup.setKeyboard(Collections.singletonList(Markups.getAnyLine("Отменить заказ",
                 CallbackForMsg.CANCEL_ORDER_AFTER_PAYMENT.name())));
+        editMessageText.setReplyMarkup(keyboardMarkup);
         editMessageText.setText(EmojiParser.parseToUnicode(":scroll: Заказ#" + last.getId() + ":<b>\n" +
                 last.getPositions() +
                 "</b>\n:moneybag: Сумма заказа: <b>" + last.getOrderSum() + "₽</b>" +
@@ -844,7 +846,7 @@ public class Handlers {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
 
         keyboardMarkup.setKeyboard(Collections.singletonList(Markups
-                .getBackPageLine(CallbackForMsg.CART, "Назад к оформлению")));
+                .getBackPageLine(CallbackForMsg.MAIN_PAGE, "На главную")));
         String message = update.getCallbackQuery().getMessage().getText();
         String data = update.getCallbackQuery().getData();
 
@@ -854,7 +856,7 @@ public class Handlers {
         orderService.changeStatusOrder(7L, last);
         sendMessage.setChatId(chatId);
         sendMessage.setReplyMarkup(keyboardMarkup);
-        sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#"+ orderId + "был <b>отменен</b>." +
+        sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#"+ orderId + " был <b>отменен</b>." +
                 "\n:pensive: Извините, нам пришлось отменить заказ по непредвиденным обстоятельствам.." +
                 "\n\nДеньги будут <b>возвращены</b> Вам в течение 2 часов."));
         return sendMessage;

@@ -7,5 +7,6 @@ package com.shaurmalay.bot.model.callbacks;
 public enum CallbackForDrinks {
     D_ORANGE,
     D_COLA,
+    D_SPRITE,
     D_BURN
 }
