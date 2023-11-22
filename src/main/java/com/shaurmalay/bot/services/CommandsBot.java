@@ -41,7 +41,7 @@ public class CommandsBot {
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         String answer = EmojiParser.parseToUnicode("Сәлам, <b>" + firstName + "!</b>" + " :blush:");
         buttons.add(Buttons.getCreateOrderBtn());
-        buttons.add(Buttons.getMyOrdersBtn());
+//        buttons.add(Buttons.getMyOrdersBtn());
         rowsInLine.add(buttons);
         rowsInLine.add(Markups.getCartLine());
         keyboardMarkup.setKeyboard(rowsInLine);

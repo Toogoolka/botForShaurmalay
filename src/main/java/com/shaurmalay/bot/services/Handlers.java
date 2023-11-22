@@ -118,7 +118,7 @@ public class Handlers {
         editMessageText.enableHtml(true);
         editMessageText.setChatId(String.valueOf(chatId));
         keyboardMarkup.setKeyboard(Markups.getStartersMurkup(starters, 2));
-        editMessageText.setText(EmojiParser.parseToUnicode(":fire: <b>Да-да, брат - это то, что нужно:</b>"));
+        editMessageText.setText(EmojiParser.parseToUnicode(":fire: <b>Да-да - это то, что нужно:</b>"));
         editMessageText.setReplyMarkup(keyboardMarkup);
         return editMessageText;
     }
@@ -153,7 +153,7 @@ public class Handlers {
         List<List<InlineKeyboardButton>> rowsInLine = new ArrayList<>();
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         buttons.add(Buttons.getCreateOrderBtn());
-        buttons.add(Buttons.getMyOrdersBtn());
+//        buttons.add(Buttons.getMyOrdersBtn());
         rowsInLine.add(buttons);
         rowsInLine.add(Markups.getCartLine());
         keyboardMarkup.setKeyboard(rowsInLine);
@@ -398,7 +398,7 @@ public class Handlers {
         keyboardMarkup.setKeyboard(Markups.getGoodsInCartMarkup(goodInCartService.getGoodsWithBuffsToString(cart),
                 2, goodsInCarts));
         editMessageText.setReplyMarkup(keyboardMarkup);
-        editMessageText.setText(EmojiParser.parseToUnicode(":zap: Удалил <b>" + name +
+        editMessageText.setText(EmojiParser.parseToUnicode(":zap: <b>ГАЛЯ! У нас отмена!</b>" + name +
                 "</b>\n\n:shopping_cart: <b> Сейчас в корзине: </b>\n\n" + goods +
                 "\n\nЧто-то ещё?"));
         return editMessageText;
@@ -542,9 +542,9 @@ public class Handlers {
                 .get();
         keyboardMarkup.setKeyboard(Markups.getMyAddressMarkup(orders, 2));
         orderService.registerOrder(chatId);
-        editMessageText.setText(EmojiParser.parseToUnicode("Отправьте ваш адрес мне в сообщение или выберите из существующих." +
-                "\n\nЧтобы я понял, что вы отправляете адрес, <b><u>ОБЯЗАТЕЛЬНО</u></b> начните ваше сообщение с адрес" +
-                "\n:bulb: <i><u>Например:</u> адрес ул.Пушкина, 45-3</i>"));
+        editMessageText.setText(EmojiParser.parseToUnicode("Отправьте Ваш адрес мне в сообщение или выберите из существующих." +
+                "\n\nЧтобы я понял, что Вы отправляете адрес, <b><u>ОБЯЗАТЕЛЬНО</u></b> начните ваше сообщение с <b>адрес</b>" +
+                "\n:bulb: <i><u>Например:</u> <b>адрес</b> ул.Пушкина, 45-3</i>"));
         editMessageText.setReplyMarkup(keyboardMarkup);
         return editMessageText;
     }
@@ -581,8 +581,8 @@ public class Handlers {
         sendMessage.setChatId(String.valueOf(chatId));
         sendMessage.setText(EmojiParser.parseToUnicode("<b>Отлично!</b> Оставьте номер телефона для связи, " +
                 "или выберите из существующих" +
-                "\n\nЧтобы я понял, что вы отправляете телефон, <b><u>ОБЯЗАТЕЛЬНО</u></b> начните ваше сообщение с тел\n\n" +
-                ":bulb: <i><u>Например:</u> тел 89172223333</i>"));
+                "\n\nЧтобы я понял, что Вы отправляете телефон, <b><u>ОБЯЗАТЕЛЬНО</u></b> начните Ваше сообщение с <b>тел</b>\n\n" +
+                ":bulb: <i><u>Например:</u> <b>тел</b> 89172223333</i>"));
         return sendMessage;
     }
 
@@ -736,11 +736,11 @@ public class Handlers {
             goodInCartService.deleteAllFromCart(cart);
             orderService.changeStatusOrder(1L, last);
             editMessageText.setText(EmojiParser.parseToUnicode(":white_check_mark: Отлично! " +
-                    "Мы уже начали выполнять ваш заказ.\n\n<b>Приятного аппетита!</b>"));
+                    "Мы уже начали выполнять Ваш заказ.\n\n<b>Приятного аппетита!</b>"));
             rows.add(Markups.getMainPageLine());
         } else {
             editMessageText.setText(EmojiParser.parseToUnicode(":x: Ваш платёж <b>не подтверждён</b>." +
-                    "\nЕсли вы ещё <b><u>не оплачивали</u></b> ваш заказ, воспользуйтесь кнопкой оплатить заказ ниже." +
+                    "\nЕсли Вы ещё <b><u>не оплачивали</u></b> Ваш заказ, воспользуйтесь кнопкой оплатить заказ ниже." +
                     "\n\n<b>Заказ#" + last.getId() + ":</b> Итого к оплате: " + last.getOrderSum() +
                     "\nЕсли <b>заказ оплачен</b>, ожидайте подтверждения\n\n\nOrder#" + orderId));
             rows.add(Markups.getPaymentLine("Оплатить заказ", last.getLinkToPay()));
@@ -790,15 +790,15 @@ public class Handlers {
         String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
         Cart cart = cartDao.findByUserId(Long.parseLong(chatId));
         Order last = orderDao.findById(Long.parseLong(orderId)).get();
-        editMessageText.setText(EmojiParser.parseToUnicode(":scroll: <b>Заказ#" + last.getId() + ":</b>\n" +
+        editMessageText.setText(EmojiParser.parseToUnicode(":scroll: Заказ#" + last.getId() + ":<b>\n" +
                 last.getPositions() +
-                "\n:moneybag: Сумма заказа: <b>" + last.getOrderSum() + "₽</b>" +
+                "</b>\n:moneybag: Сумма заказа: <b>" + last.getOrderSum() + "₽</b>" +
                 "\n:round_pushpin:" + last.getAddres() +
                 "\n:telephone_receiver:" + last.getPhone() + "\n\n\nChatId:_" + chatId+ "\nOrderId:#" + last.getId()));
         return editMessageText;
     }
     @Transactional
-    public SendMessage startDeliveringSendToUser(SendMessage sendMessage, Update update) {
+    public void startDeliveringSendToUser(SendMessage sendMessage, Update update) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         String message = update.getCallbackQuery().getMessage().getText();
@@ -809,13 +809,12 @@ public class Handlers {
         orderService.changeStatusOrder(1L, order);
         Cart cart = cartDao.findByUserId(chatId);
         goodInCartService.deleteAllFromCart(cart);
-        rows.add(Markups.getMainPageLine());
-        keyboardMarkup.setKeyboard(rows);
-        sendMessage.setText(EmojiParser.parseToUnicode(":rocket: Курьер взял в работу ваш Заказ#" + orderId +
-                "\nДоставим в течение часа"));
-        sendMessage.setReplyMarkup(keyboardMarkup);
-        sendMessage.setChatId(String.valueOf(chatId));
-        return sendMessage;
+//        rows.add(Markups.getMainPageLine());
+//        keyboardMarkup.setKeyboard(rows);
+//        sendMessage.setText(EmojiParser.parseToUnicode(":rocket: Курьер уже взял в работу Ваш Заказ#" + orderId +
+//                "\nДоставим в течение часа"));
+//        sendMessage.setReplyMarkup(keyboardMarkup);
+//        sendMessage.setChatId(String.valueOf(chatId));
     }
 
 

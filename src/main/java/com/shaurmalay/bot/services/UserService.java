@@ -6,6 +6,7 @@ import com.shaurmalay.bot.dao.UserDao;
 import com.shaurmalay.bot.exceptions.UserNotFoundException;
 import com.shaurmalay.bot.model.Cart;
 import com.shaurmalay.bot.model.Order;
+import com.shaurmalay.bot.model.StatusUser;
 import com.shaurmalay.bot.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -85,5 +87,16 @@ public class UserService {
          listOrder.add(order);
          user.get().setOrderList(listOrder);
          userDao.save(user.get());
+    }
+    @Transactional
+    public boolean isAdmin(Long userId) {
+        User user = userDao.findById(userId).get();
+        List<StatusUser> statuses = user.getStatuses();
+        for (StatusUser status : statuses) {
+            if (status.getStatus().equals("ADMIN")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

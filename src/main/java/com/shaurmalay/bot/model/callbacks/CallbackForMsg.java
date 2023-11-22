@@ -22,6 +22,7 @@ public enum CallbackForMsg {
     ORDERING,
     BACK_TO_OFFER,
     CHECK_STATE_PAYMENT,
-    GET_TO_DEL
+    GET_TO_DEL,
+    ADMIN_PANEL
 
 }
