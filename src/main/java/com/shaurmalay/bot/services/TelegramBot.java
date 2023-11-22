@@ -288,6 +288,16 @@ public class TelegramBot extends TelegramLongPollingBot {
                 } else if (data.equals(CallbackForAdminPanel.SWITCH_ACTION.name())) {
                     executeEditMessage(adminCommands.switchActionHandler(editMessageText));
                     return;
+                } else if (data.equals(CallbackForMsg.CANCEL_ORDER_AFTER_PAYMENT.name())) {
+                    executeEditMessage(handlers.confirmingCancelingHandler(editMessageText, update));
+                    return;
+                } else if (data.equals(CallbackForMsg.ROLLBACK_CANCELING_AFTER_PAYMENT.name())) {
+                    executeEditMessage(handlers.getToDelOrderHandler(editMessageText, update));
+                    return;
+                } else if (data.equals(CallbackForMsg.ACTION_CANCELING_AFTER_PAYMENT.name())) {
+                    executeEditMessage(handlers.orderCanceledToDelChat(editMessageText,update));
+                    executeMessage(handlers.actionCancelingAfterPayment(sendMessage, update));
+                    return;
                 }
                 editMessageText.setText(EmojiParser.parseToUnicode(DEFAULT_CALLBACK_ANSWER));
                 rowsInLine.add(Markups.getBackPageLine(CallbackForMsg.MAIN_PAGE, "Назад"));

@@ -691,7 +691,7 @@ public class Handlers {
         sendMessage.setChatId(chatId);
         sendMessage.setReplyMarkup(keyboardMarkup);
         sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#"+ orderId + "был <b>отменен</b>." +
-                "\nПричина: <b>" + reason.getName() + "</b>"));
+                "\nПричина: <b>" + reason.getName() + "</b>\n Вы можете уточнить по номеру"));
         return sendMessage;
     }
 
@@ -785,11 +785,14 @@ public class Handlers {
 
     @Transactional
     public EditMessageText getToDelOrderHandler(EditMessageText editMessageText, Update update) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         String message = update.getCallbackQuery().getMessage().getText();
         String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
         String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
         Cart cart = cartDao.findByUserId(Long.parseLong(chatId));
         Order last = orderDao.findById(Long.parseLong(orderId)).get();
+        keyboardMarkup.setKeyboard(Collections.singletonList(Markups.getAnyLine("Отменить заказ",
+                CallbackForMsg.CANCEL_ORDER_AFTER_PAYMENT.name())));
         editMessageText.setText(EmojiParser.parseToUnicode(":scroll: Заказ#" + last.getId() + ":<b>\n" +
                 last.getPositions() +
                 "</b>\n:moneybag: Сумма заказа: <b>" + last.getOrderSum() + "₽</b>" +
@@ -816,6 +819,49 @@ public class Handlers {
 //        sendMessage.setReplyMarkup(keyboardMarkup);
 //        sendMessage.setChatId(String.valueOf(chatId));
     }
+
+    public EditMessageText confirmingCancelingHandler(EditMessageText editMessageText, Update update) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        String message = update.getCallbackQuery().getMessage().getText();
+        String orderId = message.substring(message.lastIndexOf("#") + 1);
+        String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n"));
+
+        rows.add(Markups.getAnyLine("Да, отменить оплаченый заказ",
+                CallbackForMsg.ACTION_CANCELING_AFTER_PAYMENT.name()));
+        rows.add(Markups.getAnyLine("Нет, я передумал",
+                CallbackForMsg.ROLLBACK_CANCELING_AFTER_PAYMENT.name()));
+        keyboardMarkup.setKeyboard(rows);
+        editMessageText.setReplyMarkup(keyboardMarkup);
+        editMessageText.setText(EmojiParser.parseToUnicode(":bangbang: Вы действительно хотите отменить <b>Заказ#"
+                + orderId +
+                "?</b>" +
+                "\n\n\nChatId:_" + chatId + "\nOrderId:#" + orderId));
+        return editMessageText;
+    }
+
+    public SendMessage actionCancelingAfterPayment(SendMessage sendMessage, Update update) {
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+
+        keyboardMarkup.setKeyboard(Collections.singletonList(Markups
+                .getBackPageLine(CallbackForMsg.CART, "Назад к оформлению")));
+        String message = update.getCallbackQuery().getMessage().getText();
+        String data = update.getCallbackQuery().getData();
+
+        String chatId = message.substring(message.lastIndexOf("_") + 1, message.lastIndexOf("\n")).trim();
+        String orderId = message.substring(message.lastIndexOf("#") + 1).trim();
+        Order last = orderDao.findById(Long.parseLong(orderId)).get();
+        orderService.changeStatusOrder(7L, last);
+        sendMessage.setChatId(chatId);
+        sendMessage.setReplyMarkup(keyboardMarkup);
+        sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#"+ orderId + "был <b>отменен</b>." +
+                "\n:pensive: Извините, нам пришлось отменить заказ по непредвиденным обстоятельствам.." +
+                "\n\nДеньги будут <b>возвращены</b> Вам в течение 2 часов."));
+        return sendMessage;
+
+
+    }
+
 
 
 }
