@@ -605,7 +605,7 @@ public class Handlers {
         int goodsSum = last.getOrderSum();
         int deliveryPrice = delPriceDao.findByCallBack(data).get().getPrice();
         int total = userChatId.equals(String.valueOf(537130248))
-                ? (int) (goodsSum * 0.5 + deliveryPrice)
+                ? deliveryPrice
                 : goodsSum + deliveryPrice;
         try {
             responseInitObj = controller.getLinkFromBank(requestObjBuildService.initObjBuilder(userChatId,
