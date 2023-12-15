@@ -42,7 +42,7 @@ public class RequestObjBuildService {
         item.setTax("none");
 
         receipt.setItems(Collections.singletonList(item));
-        receipt.setPhone("+79063324310");
+        receipt.setPhone("+79046782277");
         receipt.setTaxation("patent");
         paymentInitObj.setReceipt(receipt);
         paymentInitObj.setToken(token);

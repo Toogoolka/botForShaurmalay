@@ -24,7 +24,10 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageTe
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.time.LocalDateTime;
@@ -75,6 +78,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+
         int time = LocalDateTime.now().toLocalTime().getHour();
 
         List<Good> goodList = goodDaoImpl.getAllShaurmas();
@@ -103,7 +107,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                         ":man_technologist: Технический перерыв. Работаем над улучшением"));
                 executeMessage(sendMessage);
                 return;
-            } else if ((time > 22 || time < 9) && !userService.isAdmin(update.getMessage().getChatId())) {
+            } else if ((time >= 22 || time < 9) && !userService.isAdmin(update.getMessage().getChatId())) {
                 sendMessage.setChatId(String.valueOf(update.getMessage().getChatId()));
                 sendMessage.setText(EmojiParser.parseToUnicode(":zzz: Тсс..Шаурмалай сейчас спит\n" +
                         "\nМы работаем с <b>9</b> до <b>22</b> часов" +
@@ -157,7 +161,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                         ":man_technologist: Технический перерыв. Работаем над улучшением"));
                 executeMessage(sendMessage);
                 return;
-            }else if ((time > 22 || time < 9) && !userService.isAdmin(update.getCallbackQuery().getMessage().getChatId())) {
+            }else if ((time >= 22 || time < 9) && !userService.isAdmin(update.getCallbackQuery().getMessage().getChatId())) {
                 sendMessage.setChatId(String.valueOf(update.getCallbackQuery().getMessage().getChatId()));
                 sendMessage.setText(EmojiParser.parseToUnicode(":zzz: Тсс..Шаурмалай сейчас спит\n" +
                         "\nМы работаем с <b>9</b> до <b>22</b> часов" +

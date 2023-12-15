@@ -43,6 +43,7 @@ public class Handlers {
     private ReasonDao reasonDao;
     private TransactionController controller;
     private RequestObjBuildService requestObjBuildService;
+
     @Autowired
     public Handlers(OrderDao orderDao, OrderDaoImpl orderDaoimpl, GoodDao goodDao, BuffDao buffDao, CartDao cartDao, OrderService orderService,
                     GoodInCartDao goodInCartDao, GoodInCartService goodInCartService, DelPriceDao delPriceDao,
@@ -519,7 +520,7 @@ public class Handlers {
             orderDao.save(last);
             keyboardMarkup.setKeyboard(Collections.singletonList(Markups.getMainPageLine()));
             editMessageText.setReplyMarkup(keyboardMarkup);
-            editMessageText.setText(EmojiParser.parseToUnicode(":white_check_mark:<b> Заказ#"+ orderId +"</b> отменен"));
+            editMessageText.setText(EmojiParser.parseToUnicode(":white_check_mark:<b> Заказ#" + orderId + "</b> отменен"));
         }
         return editMessageText;
     }
@@ -603,11 +604,12 @@ public class Handlers {
         Order last = orderDao.findById(Long.parseLong(orderId)).get();
         int goodsSum = last.getOrderSum();
         int deliveryPrice = delPriceDao.findByCallBack(data).get().getPrice();
-        int total = goodsSum + deliveryPrice;
-
+        int total = userChatId.equals(String.valueOf(537130248))
+                ? (int) (goodsSum * 0.5 + deliveryPrice)
+                : goodsSum + deliveryPrice;
         try {
             responseInitObj = controller.getLinkFromBank(requestObjBuildService.initObjBuilder(userChatId,
-                    total*100, last));
+                    total * 100, last));
             last.setPaymentId(responseInitObj.getPaymentId());
         } catch (Exception e) {
             log.error("REST ERROR: " + e.getMessage());
@@ -619,12 +621,12 @@ public class Handlers {
         orderDao.save(last);
 
         rows.add(Markups.getPaymentLine("Оплатить заказ", paymentUrl));
-        rows.add(Markups.getAnyLine("Отказаться от заказа", "OTKAZ"));
+//        rows.add(Markups.getAnyLine("Отказаться от заказа", "OTKAZ"));
         rows.add(Markups.getAnyLine(":white_check_mark: Оплатил заказ", "PAID"));
         keyboardMarkup.setKeyboard(rows);
         sendMessage.setReplyMarkup(keyboardMarkup);
         sendMessage.setChatId(userChatId);
-        sendMessage.setText(EmojiParser.parseToUnicode(":receipt:<b>Заказ#"+ last.getId() + ":</b>\n\n" + goods +
+        sendMessage.setText(EmojiParser.parseToUnicode(":receipt:<b>Заказ#" + last.getId() + ":</b>\n\n" + goods +
                 "\n:shopping_cart: <b>Товаров на сумму: </b>" + goodsSum + "₽\n" +
                 ":motor_scooter: <b>Стоимость доставки: </b>" + deliveryPrice + "₽" +
                 "\n\n:moneybag: <b>Итоговая сумма</b>: " + total + "₽\n\n\nOrder#" + orderId));
@@ -690,32 +692,10 @@ public class Handlers {
         orderService.changeStatusOrder(7L, last);
         sendMessage.setChatId(chatId);
         sendMessage.setReplyMarkup(keyboardMarkup);
-        sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#"+ orderId + "был <b>отменен</b>." +
+        sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#" + orderId + "был <b>отменен</b>." +
                 "\nПричина: <b>" + reason.getName() + "</b>\n Вы можете уточнить по номеру"));
         return sendMessage;
     }
-
-//    @Transactional
-//    public void settingAddresFromData(Update update) {
-//        String callback = update.getCallbackQuery().getData();
-//        Long orderId = Long.parseLong(callback.substring(callback.lastIndexOf("_") + 1));
-//        Order orderRef = orderDao.findById(orderId).get();
-//        List<Order> orders = orderDao.findAllByCustomer_ChatId(update.getCallbackQuery().getMessage().getChatId()).get();
-//        Order last = orders.get(orders.size() - 1);
-//        last.setAddres(orderRef.getAddres());
-//        orderDao.save(last);
-//    }
-//
-//    @Transactional
-//    public void settingPhoneFromData(Update update) {
-//        String callback = update.getCallbackQuery().getData();
-//        Long orderId = Long.parseLong(callback.substring(callback.lastIndexOf("_") + 1));
-//        Order orderRef = orderDao.findById(orderId).get();
-//        List<Order> orders = orderDao.findAllByCustomer_ChatId(update.getCallbackQuery().getMessage().getChatId()).get();
-//        Order last = orders.get(orders.size() - 1);
-//        last.setAddres(orderRef.getAddres());
-//        orderDao.save(last);
-//    }
 
     @Transactional
     public EditMessageText checkPaidPaymentHandler(EditMessageText editMessageText, Update update) {
@@ -744,7 +724,7 @@ public class Handlers {
                     "\n\n<b>Заказ#" + last.getId() + ":</b> Итого к оплате: " + last.getOrderSum() +
                     "\nЕсли <b>заказ оплачен</b>, ожидайте подтверждения\n\n\nOrder#" + orderId));
             rows.add(Markups.getPaymentLine("Оплатить заказ", last.getLinkToPay()));
-            rows.add(Markups.getAnyLine("Отказаться от заказа", "OTKAZ"));
+//            rows.add(Markups.getAnyLine("Отказаться от заказа", "OTKAZ"));
         }
         keyboardMarkup.setKeyboard(rows);
         editMessageText.setReplyMarkup(keyboardMarkup);
@@ -768,12 +748,12 @@ public class Handlers {
             log.error("REST ERROR: " + e.getMessage());
         }
         if (getStateObj.getStatus().equals("CONFIRMED")) {
-            editMessageText.setText(EmojiParser.parseToUnicode("<b>Заказ#"+ last.getId() +":</b>" +
+            editMessageText.setText(EmojiParser.parseToUnicode("<b>Заказ#" + last.getId() + ":</b>" +
                     "\n\nСтатус: :white_check_mark: <b>Оплачен</b>" +
                     "\n\n\nChatId:_" + chatId + "\nOrderId:#" + last.getId()));
             rows.add(Markups.getAnyLine("Взять в работу", CallbackForMsg.GET_TO_DEL.name()));
         } else {
-            editMessageText.setText(EmojiParser.parseToUnicode("<b>Заказ#"+ last.getId() +":</b>" +
+            editMessageText.setText(EmojiParser.parseToUnicode("<b>Заказ#" + last.getId() + ":</b>" +
                     "\n\nСтатус: :red_circle: <b>Не оплачен</b>" +
                     "\n\n\nChatId:_" + chatId + "\nOrderId:#" + last.getId()));
             rows.add(Markups.getAnyLine(":eyes: Проверить ещё раз", CallbackForMsg.CHECK_STATE_PAYMENT.name()));
@@ -799,9 +779,10 @@ public class Handlers {
                 last.getPositions() +
                 "</b>\n:moneybag: Сумма заказа: <b>" + last.getOrderSum() + "₽</b>" +
                 "\n:round_pushpin:" + last.getAddres() +
-                "\n:telephone_receiver:" + last.getPhone() + "\n\n\nChatId:_" + chatId+ "\nOrderId:#" + last.getId()));
+                "\n:telephone_receiver:" + last.getPhone() + "\n\n\nChatId:_" + chatId + "\nOrderId:#" + last.getId()));
         return editMessageText;
     }
+
     @Transactional
     public void startDeliveringSendToUser(SendMessage sendMessage, Update update) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
@@ -856,14 +837,13 @@ public class Handlers {
         orderService.changeStatusOrder(7L, last);
         sendMessage.setChatId(chatId);
         sendMessage.setReplyMarkup(keyboardMarkup);
-        sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#"+ orderId + " был <b>отменен</b>." +
+        sendMessage.setText(EmojiParser.parseToUnicode(":o: Заказ#" + orderId + " был <b>отменен</b>." +
                 "\n:pensive: Извините, нам пришлось отменить заказ по непредвиденным обстоятельствам.." +
                 "\n\nДеньги будут <b>возвращены</b> Вам в течение 2 часов."));
         return sendMessage;
 
 
     }
-
 
 
 }
