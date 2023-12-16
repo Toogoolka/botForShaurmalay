@@ -724,6 +724,7 @@ public class Handlers {
                     "\n\n<b>Заказ#" + last.getId() + ":</b> Итого к оплате: " + last.getOrderSum() +
                     "\nЕсли <b>заказ оплачен</b>, ожидайте подтверждения\n\n\nOrder#" + orderId));
             rows.add(Markups.getPaymentLine("Оплатить заказ", last.getLinkToPay()));
+            rows.add(Markups.getAnyLine(":white_check_mark: Всё, заказ оплачен", "PAID"));
 //            rows.add(Markups.getAnyLine("Отказаться от заказа", "OTKAZ"));
         }
         keyboardMarkup.setKeyboard(rows);
