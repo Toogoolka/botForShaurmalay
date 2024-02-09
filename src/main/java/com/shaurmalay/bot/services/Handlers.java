@@ -396,11 +396,12 @@ public class Handlers {
         goodInCartService.deleteGoodFromCartById(goodInCartId);
         String goods = goodInCartService.getGoodsWithBuffsToString(cart);
         List<GoodInCart> goodsInCarts = goodInCartDao.findAllByCart(cart).get();
-        keyboardMarkup.setKeyboard(Markups.getGoodsInCartMarkup(goodInCartService.getGoodsWithBuffsToString(cart),
+        keyboardMarkup.setKeyboard(Markups.getGoodsInCartMarkup(goods,
                 2, goodsInCarts));
         editMessageText.setReplyMarkup(keyboardMarkup);
-        editMessageText.setText(EmojiParser.parseToUnicode(":zap: <b>ГАЛЯ! У нас отмена!</b>" + name +
-                "</b>\n\n:shopping_cart: <b> Сейчас в корзине: </b>\n\n" + goods +
+        editMessageText.setMessageId(update.getCallbackQuery().getMessage().getMessageId());
+        editMessageText.setText(EmojiParser.parseToUnicode(":zap: <b>ГАЛЯ! У нас отмена!</b> Убираю: " + name +
+                "\n\n:shopping_cart: <b> Сейчас в корзине: </b>\n\n" + goods +
                 "\n\nЧто-то ещё?"));
         return editMessageText;
     }
